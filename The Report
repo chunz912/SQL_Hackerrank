@@ -1,0 +1,72 @@
+/*
+You are given two tables: Students and Grades. Students contains three columns ID, Name and Marks.
+Column      Type
+Id          Integer
+Name        String
+Marks       Integer
+
+Grades contains the following data:
+Grade   Min_Mark    Max_Mark
+1       0           9
+2       10          19
+3       20          29
+4       30          39
+5       40          49
+6       50          59 
+7       60          69
+8       70          79
+9       80          89
+10      90          100
+
+Ketty gives Eve a task to generate a report containing three columns: Name, Grade and Mark. 
+Ketty doesn't want the NAMES of those students who received a grade lower than 8. 
+The report must be in descending order by grade -- i.e. higher grades are entered first. 
+If there is more than one student with the same grade (8-10) assigned to them, order those particular students 
+by their name alphabetically. 
+Finally, if the grade is lower than 8, use "NULL" as their name and list them by their grades in descending order. 
+If there is more than one student with the same grade (1-7) assigned to them, order those particular students 
+by their marks in ascending order.
+
+Write a query to help Eve.
+
+*/
+
+method 1 CASE WHEN version
+
+select Name = CASE
+WHEN Grade < 8 THEN NULL
+ELSE Name
+END, Grade, Marks
+from
+(
+SELECT Name, Grade = CASE 
+WHEN Marks <= 9 THEN 1
+WHEN Marks <= 19 THEN 2
+WHEN Marks <= 29 THEN 3
+WHEN Marks <= 39 THEN 4
+WHEN Marks <= 49 THEN 5
+WHEN Marks <= 59 THEN 6
+WHEN Marks <= 69 THEN 7
+WHEN Marks <= 79 THEN 8
+WHEN Marks <= 89 THEN 9
+WHEN Marks <= 100 THEN 10
+END,
+Marks
+from STUDENTS
+) tmp
+order by Grade desc, Name
+
+method 2
+
+SELECT CASE
+WHEN Grade < 8 THEN NULL
+ELSE Name
+END, Grade, Marks
+FROM STUDENTS S
+JOIN GRADES G
+ON G.Min_Mark <= S.Marks and S.Marks <= G.Max_Mark
+ORDER BY Grade desc, Name asc
+
+wrong:
+select name case when...order by grade desc, name
+reason: name changes. for NULLs, not able to sort by Name
