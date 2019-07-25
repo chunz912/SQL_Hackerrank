@@ -1,0 +1,77 @@
+/*
+Julia just finished conducting a coding contest, and she needs your help assembling the leaderboard! 
+Write a query to print the respective hacker_id and name of hackers who achieved full scores for more than one challenge. 
+Order your output in descending order by the total number of challenges in which the hacker earned a full score. 
+If more than one hacker received full scores in same number of challenges, then sort them by ascending hacker_id.
+
+Input Format
+
+The following tables contain contest data:
+
+Hackers: 
+The hacker_id is the id of the hacker, and name is the name of the hacker. 
+column    Type
+hacker_id integer
+name      string
+
+Difficulty: 
+The difficult_level is the level of difficulty of the challenge, 
+and score is the score of the challenge for the difficulty level. 
+column            Type
+difficulty_level  integer
+score             integer
+
+Challenges: 
+The challenge_id is the id of the challenge, 
+the hacker_id is the id of the hacker who created the challenge, 
+and difficulty_level is the level of difficulty of the challenge. 
+column            Type
+challenge_id      integer
+hacker_id         integer
+difficulty_level  integer
+
+Submissions: 
+The submission_id is the id of the submission, 
+hacker_id is the id of the hacker who made the submission, 
+challenge_id is the id of the challenge that the submission belongs to, 
+and score is the score of the submission.
+column        type
+submission_id integer
+hacker_id     integer
+challenge_id  integer
+score         integer
+*/
+
+method 1 subquery
+
+select hacker_id, name
+from
+(
+select NumofChallenges = count(*), H.hacker_id, H.name
+from Hackers H
+join Submissions S
+on H.hacker_id = S.hacker_id
+join Challenges C
+on S.challenge_id = C.challenge_id
+join Difficulty D
+on C.difficulty_level = D.difficulty_level
+where S.score = D.score
+group by H.hacker_id, H.name
+) tmp
+where NumofChallenges > 1
+order by NumofChallenges desc, hacker_id
+
+method 2
+
+select h.hacker_id, h.name
+from submissions s
+inner join challenges c
+on s.challenge_id = c.challenge_id
+inner join difficulty d
+on c.difficulty_level = d.difficulty_level 
+inner join hackers h
+on s.hacker_id = h.hacker_id
+where s.score = d.score 
+group by h.hacker_id, h.name
+having count(h.hacker_id) > 1
+order by count(h.hacker_id) desc, h.hacker_id asc
