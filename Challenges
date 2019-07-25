@@ -1,0 +1,117 @@
+/*
+Julia asked her students to create some coding challenges. 
+Write a query to print the hacker_id, name, and the total number of challenges created by each student. 
+Sort your results by the total number of challenges in descending order. 
+If more than one student created the same number of challenges, then sort the result by hacker_id. 
+If more than one student created the same number of challenges and the count is less than the maximum number of challenges created, 
+then exclude those students from the result.
+
+Input Format
+
+The following tables contain challenge data:
+
+Hackers: The hacker_id is the id of the hacker, and name is the name of the hacker.
+column    type
+hacker_id integer
+name      string
+
+Challenges: The challenge_id is the id of the challenge, and hacker_id is the id of the student who created the challenge.
+column        type
+challenge_id  integer
+hacker_id     integer
+
+*/
+
+method 1 CTE version
+
+with CTE as
+(select * from 
+(
+select cnt = count(challenge_id), H.hacker_id, name
+from Hackers H
+join challenges C
+on H.hacker_id = C.hacker_id
+group by H.hacker_id, name
+) tmp
+)
+
+select hacker_id, name, cnt
+from CTE
+where cnt in
+(select cnt from CTE
+group by cnt
+having count(cnt) =1) or 
+cnt =
+(select max(cnt) from CTE)
+order by cnt desc, hacker_id asc
+
+method 2 subquery
+
+SELECT H.hacker_id ,H.name ,COUNT(*) --AS TOTAL
+FROM Hackers AS H 
+LEFT JOIN Challenges AS C 
+ON H.hacker_id = C.hacker_id
+GROUP BY H.hacker_id, H.name
+HAVING COUNT() = 
+( 
+  SELECT TOP 1 COUNT() 
+  FROM CHALLENGES 
+  GROUP BY hacker_id 
+  ORDER BY COUNT() DESC 
+ )
+OR 
+COUNT() IN 
+( 
+  SELECT TOTAL FROM ( 
+                      SELECT COUNT() AS TOTAL 
+                      FROM HACKERS H, CHALLENGES C 
+                      WHERE H.hacker_id = C.hacker_id 
+                      GROUP BY H.hacker_id, H.name 
+                     ) AS COUNTS 
+  GROUP BY TOTAL HAVING COUNT() = 1 
+)
+
+ORDER BY COUNT(*) DESC, H.hacker_id
+
+method 3 window function
+
+WITH CC AS
+(
+  SELECT C.HACKER_ID AS ID, COUNT(C.CHALLENGE_ID) AS CREATED, 
+  COUNT(C.HACKER_ID) OVER (PARTITION BY COUNT(C.CHALLENGE_ID)) AS DUPLICATES
+  FROM CHALLENGES AS C
+  GROUP BY C.HACKER_ID
+ )
+ 
+SELECT CC.ID, H.NAME, CC.CREATED
+FROM CC 
+INNER JOIN HACKERS AS H 
+ON CC.ID = H.HACKER_ID
+WHERE CC.DUPLICATES = 1 OR 
+CC.CREATED IN (SELECT MAX(CREATED) FROM CC)
+ORDER BY CC.CREATED DESC, CC.ID ASC
+
+method 4 multiple CTEs
+
+with c1 as (
+	select hacker_id, count(*) as cc_ch
+	from Challenges as c
+	group by hacker_id
+), c2 as (
+	select max(cc_ch) as max_cc_ch 
+	from c1
+), c3 as (
+	select cc_ch
+	from c1
+	where cc_ch < (select top 1 max_cc_ch from c2)
+	group by cc_ch
+	having count(*) = 1
+	
+	union 
+	select max_cc_ch from c2
+)
+select h.hacker_id, h.name, c1.cc_ch
+from c1 
+join c3 on c1.cc_ch = c3.cc_ch
+join Hackers as h on c1.hacker_id = h.hacker_id 
+order by c1.cc_ch desc, hacker_id
